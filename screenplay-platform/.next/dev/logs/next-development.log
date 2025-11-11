@@ -1,0 +1,33 @@
+[00:01:05.923] Server  LOG      ✓ Ready in 65.7s
+[00:05:25.079] Server  ERROR    ⨯ TurbopackInternalError: inner_of_uppers_lost_follower is not able to remove follower TaskId 16 (ProjectContainer::entrypoints) from TaskId 17 (EntrypointsOperation::new) as they don't exist as upper or follower edges
+
+Debug info:
+- Execution of get_written_endpoint_with_issues_operation failed
+- Execution of endpoint_write_to_disk_operation failed
+- Execution of pick_endpoint failed
+- Execution of entrypoints_without_collectibles_operation failed
+- inner_of_uppers_lost_follower is not able to remove follower TaskId 16 (ProjectContainer::entrypoints) from TaskId 17 (EntrypointsOperation::new) as they don't exist as upper or follower edges
+[00:05:25.083] Server  ERROR   TurbopackInternalError: inner_of_uppers_lost_follower is not able to remove follower TaskId 16 (ProjectContainer::entrypoints) from TaskId 17 (EntrypointsOperation::new) as they don't exist as upper or follower edges
+
+Debug info:
+- Execution of get_written_endpoint_with_issues_operation failed
+- Execution of endpoint_write_to_disk_operation failed
+- Execution of pick_endpoint failed
+- Execution of entrypoints_without_collectibles_operation failed
+- inner_of_uppers_lost_follower is not able to remove follower TaskId 16 (ProjectContainer::entrypoints) from TaskId 17 (EntrypointsOperation::new) as they don't exist as upper or follower edges
+[00:05:25.091] Server  ERROR    ⨯ TurbopackInternalError: inner_of_uppers_lost_follower is not able to remove follower TaskId 16 (ProjectContainer::entrypoints) from TaskId 17 (EntrypointsOperation::new) as they don't exist as upper or follower edges
+
+Debug info:
+- Execution of get_written_endpoint_with_issues_operation failed
+- Execution of endpoint_write_to_disk_operation failed
+- Execution of pick_endpoint failed
+- Execution of entrypoints_without_collectibles_operation failed
+- inner_of_uppers_lost_follower is not able to remove follower TaskId 16 (ProjectContainer::entrypoints) from TaskId 17 (EntrypointsOperation::new) as they don't exist as upper or follower edges
+[00:05:25.095] Server  ERROR   TurbopackInternalError: inner_of_uppers_lost_follower is not able to remove follower TaskId 16 (ProjectContainer::entrypoints) from TaskId 17 (EntrypointsOperation::new) as they don't exist as upper or follower edges
+
+Debug info:
+- Execution of get_written_endpoint_with_issues_operation failed
+- Execution of endpoint_write_to_disk_operation failed
+- Execution of pick_endpoint failed
+- Execution of entrypoints_without_collectibles_operation failed
+- inner_of_uppers_lost_follower is not able to remove follower TaskId 16 (ProjectContainer::entrypoints) from TaskId 17 (EntrypointsOperation::new) as they don't exist as upper or follower edges
