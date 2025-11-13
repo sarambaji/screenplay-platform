@@ -1,9 +1,10 @@
-// app/api/upload-script/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseServer } from '@/lib/supabaseServer'
-import * as pdfParse from 'pdf-parse'
+import { createRequire } from 'module'
 
-export const runtime = 'nodejs' // needed for pdf-parse
+export const runtime = 'nodejs'
+
+const require = createRequire(import.meta.url)
 
 function parseFdxToText(xml: string): string {
   return xml
@@ -49,6 +50,7 @@ export async function POST(req: NextRequest) {
       const arrayBuffer = await file.arrayBuffer()
       const fileBuffer = Buffer.from(arrayBuffer)
 
+      // Upload original file to Supabase
       const uploadPath = `scripts/${crypto.randomUUID()}-${name}`
       const { error: uploadError } = await supabaseServer.storage
         .from('scripts-files')
@@ -67,8 +69,28 @@ export async function POST(req: NextRequest) {
 
       filePath = uploadPath
 
+      // Extract text by type
       if (lower.endsWith('.pdf')) {
-        const pdfData = await (pdfParse as any)(fileBuffer)
+        const mod = require('pdf-parse')
+        const pdfParse =
+          typeof mod === 'function'
+            ? (mod as (b: Buffer) => Promise<{ text: string }>)
+            : typeof mod.default === 'function'
+            ? (mod.default as (b: Buffer) => Promise<{ text: string }>)
+            : null
+
+        if (!pdfParse) {
+          console.error('Unexpected pdf-parse export shape:', mod)
+          return NextResponse.json(
+            {
+              error:
+                'PDF uploaded, but text extraction is temporarily unavailable.',
+            },
+            { status: 500 }
+          )
+        }
+
+        const pdfData = await pdfParse(fileBuffer)
         content = (pdfData.text || '').trim()
       } else if (lower.endsWith('.fdx')) {
         content = parseFdxToText(fileBuffer.toString('utf-8'))

@@ -21,7 +21,7 @@ export default function CopyrightPage() {
             Each upload is automatically timestamped when submitted, creating a verifiable record of authorship.
           </p>
           <p>
-            You can make your screenplay <strong>public</strong> (readable by others) or keep it <strong>private</strong> 
+            You can make your screenplay <strong>public</strong> (readable by others) or keep it <strong>private </strong> 
             (visible only to you). You can delete your screenplay at any time — removal is permanent, and we do not 
             retain backups of deleted content.
           </p>

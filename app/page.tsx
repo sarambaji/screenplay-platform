@@ -65,10 +65,10 @@ export default function HomePage() {
             href="/upload"
             className="inline-flex items-center justify-center rounded-full border border-zinc-700 bg-white text-black text-xs sm:text-sm font-medium px-5 py-2.5 hover:bg-zinc-100 hover:-translate-y-[1px] transition-transform"
           >
-            Upload your script
+            Create a script
           </Link>
           <Link
-            href="/scripts"
+            href="/discover"
             className="inline-flex items-center text-[0.7rem] sm:text-xs text-zinc-400 hover:text-zinc-200 transition-colors"
           >
             Browse scripts
@@ -125,14 +125,8 @@ export default function HomePage() {
             </motion.div>
           ))}
         </div>
-
-        <p className="mt-3 text-[0.65rem] text-zinc-500">
-          Visual cards hint at mood and genre — but open to read the words that
-          matter.
-        </p>
       </section>
 
-      {/* How it works */}
       {/* How it works */}
 <section className="max-w-5xl mx-auto px-6 pb-20">
   <h2 className="text-sm font-semibold text-zinc-200 mb-4">
@@ -145,7 +139,7 @@ export default function HomePage() {
         01 · Upload
       </p>
       <p className="text-[0.7rem] text-zinc-500">
-        Paste or upload your screenplay in seconds.
+        Create or upload your screenplay in seconds
       </p>
     </div>
 
@@ -155,7 +149,7 @@ export default function HomePage() {
         02 · Build your world
       </p>
       <p className="text-[0.7rem] text-zinc-500">
-        Create moodboards and playlists so your story feels alive like a living project, not just a lonely PDF.
+        Create moodboards and playlists so your story feels alive
       </p>
     </div>
 
@@ -165,7 +159,7 @@ export default function HomePage() {
         03 · Be discovered
       </p>
       <p className="text-[0.7rem] text-zinc-500">
-        You never know who’s reading. Build a profile, track reads, and give your story a real audience.
+        You never know who’s reading! Build a profile, track reads, and give your story a real audience
       </p>
     </div>
   </div>

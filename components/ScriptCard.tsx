@@ -20,7 +20,7 @@ export default function ScriptCard({
 }: ScriptCardProps) {
   return (
     <Link
-      href={`/script/${id}`}
+      href={`/scripts/${id}`}
       className="block border border-slate-800 rounded-xl p-4 hover:border-slate-500 transition"
     >
       <div className="flex items-center justify-between gap-3">

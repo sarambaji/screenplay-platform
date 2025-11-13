@@ -1,7 +1,8 @@
-import type { NextConfig } from "next";
+import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
-  /* config options here */
-};
+  // your other options here
+  serverExternalPackages: ['pdf-parse'],
+}
 
-export default nextConfig;
+export default nextConfig

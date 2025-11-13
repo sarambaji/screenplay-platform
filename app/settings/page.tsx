@@ -3,117 +3,177 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabaseClient'
 import Link from 'next/link'
+import { supabase } from '@/lib/supabaseClient'
 
 export default function SettingsPage() {
+  const router = useRouter()
+
   const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
+  const [savingProfile, setSavingProfile] = useState(false)
+  const [savingEmail, setSavingEmail] = useState(false)
+
   const [userId, setUserId] = useState<string | null>(null)
+  const [email, setEmail] = useState('')
+  const [emailVerifiedAt, setEmailVerifiedAt] = useState<string | null>(null)
+
   const [username, setUsername] = useState('')
   const [bio, setBio] = useState('')
+
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
-  const router = useRouter()
+  const [emailMsg, setEmailMsg] = useState<string | null>(null)
+  const [emailErr, setEmailErr] = useState<string | null>(null)
 
   useEffect(() => {
     const load = async () => {
       setLoading(true)
       setError(null)
 
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-
+      const { data: { user }, error: userErr } = await supabase.auth.getUser()
+      if (userErr) {
+        setError('Failed to load user.')
+        setLoading(false)
+        return
+      }
       if (!user) {
         setLoading(false)
-        router.push('/login')
+        router.replace('/login')
         return
       }
 
       setUserId(user.id)
+      setEmail(user.email || '')
+      setEmailVerifiedAt((user as any).email_confirmed_at || null)
 
-      // Try to get existing profile (0 or 1 row)
-      const { data: profileData, error: profileError } = await supabase
+      // Load (or create) profile
+      const { data: profile, error: profileErr } = await supabase
         .from('profiles')
         .select('username, bio')
         .eq('id', user.id)
         .maybeSingle()
 
-      if (profileError) {
-        console.error(profileError)
+      if (profileErr) {
+        console.error(profileErr)
         setError('Failed to load your profile.')
         setLoading(false)
         return
       }
 
-      // If no profile row yet, create one with a default username
-      if (!profileData) {
-        const fallbackUsername =
-          user.email?.split('@')[0] ?? null
-
-        const { data: newProfile, error: insertError } = await supabase
+      if (!profile) {
+        const { error: createErr } = await supabase
           .from('profiles')
-          .insert({
-            id: user.id,
-            username: fallbackUsername,
-            bio: null,
-          })
-          .select('username, bio')
-          .single()
-
-        if (insertError) {
-          console.error(insertError)
-          setError('Failed to load your profile.')
+          .insert({ id: user.id, username: '', bio: '' })
+        if (createErr) {
+          console.error(createErr)
+          setError('Could not initialize your profile.')
           setLoading(false)
           return
         }
-
-        setUsername(newProfile.username || '')
-        setBio(newProfile.bio || '')
-        setLoading(false)
-        return
+        setUsername('')
+        setBio('')
+      } else {
+        setUsername(profile.username || '')
+        setBio(profile.bio || '')
       }
 
-      // Existing profile: populate fields
-      setUsername(profileData.username || '')
-      setBio(profileData.bio || '')
       setLoading(false)
     }
-
     load()
   }, [router])
 
-  const handleSave = async (e: React.FormEvent) => {
+  const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!userId) return
 
-    setSaving(true)
+    setSavingProfile(true)
     setError(null)
     setSuccess(null)
 
-    if (!username.trim()) {
+    const clean = username.trim()
+    if (!clean) {
       setError('Username cannot be empty.')
-      setSaving(false)
+      setSavingProfile(false)
+      return
+    }
+    const ok = /^[a-zA-Z0-9._-]{2,32}$/.test(clean)
+    if (!ok) {
+      setError('Usernames must be 2–32 chars: letters, numbers, ., _, -')
+      setSavingProfile(false)
       return
     }
 
-    const { error } = await supabase
+    // ensure availability (case-insensitive)
+    const { data: existing, error: checkErr } = await supabase
       .from('profiles')
-      .update({
-        username: username.trim(),
-        bio: bio.trim() || null,
-      })
+      .select('id')
+      .ilike('username', clean)
+      .neq('id', userId)
+      .maybeSingle()
+
+    if (checkErr) {
+      console.error(checkErr)
+      setError('Could not verify username availability.')
+      setSavingProfile(false)
+      return
+    }
+    if (existing) {
+      setError('That username is taken. Try another.')
+      setSavingProfile(false)
+      return
+    }
+
+    const { error: updErr } = await supabase
+      .from('profiles')
+      .update({ username: clean, bio: bio.trim() || null })
       .eq('id', userId)
 
-    if (error) {
-      console.error(error)
-      setError('Could not save changes. That username may already be taken.')
+    if (updErr) {
+      console.error(updErr)
+      if ((updErr as any).code === '23505') {
+        setError('That username is taken. Try another.')
+      } else {
+        setError('Could not save changes.')
+      }
     } else {
       setSuccess('Profile updated.')
     }
+    setSavingProfile(false)
+  }
 
-    setSaving(false)
+  const handleSaveEmail = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!userId) return
+
+    setSavingEmail(true)
+    setEmailErr(null)
+    setEmailMsg(null)
+
+    const clean = email.trim()
+    if (!/^\S+@\S+\.\S+$/.test(clean)) {
+      setEmailErr('Enter a valid email.')
+      setSavingEmail(false)
+      return
+    }
+
+    const { data, error: updErr } = await supabase.auth.updateUser({ email: clean })
+    if (updErr) {
+      console.error(updErr)
+      setEmailErr(updErr.message || 'Could not update email.')
+      setSavingEmail(false)
+      return
+    }
+
+    // If email didn’t actually change, just show success.
+    if (data?.user?.email === clean) {
+      setEmailMsg('Email saved.')
+    } else {
+      // Supabase usually sends a confirmation link when changing emails.
+      setEmailMsg('Check your inbox to confirm your new email.')
+    }
+    // reflect verified timestamp if provided
+    setEmailVerifiedAt((data?.user as any)?.email_confirmed_at || null)
+    setSavingEmail(false)
   }
 
   if (loading) {
@@ -126,9 +186,9 @@ export default function SettingsPage() {
     )
   }
 
-  if (!userId) {
-    return null
-  }
+  if (!userId) return null
+
+  const isVerified = !!emailVerifiedAt
 
   return (
     <main className="min-h-screen bg-black text-white py-10">
@@ -139,7 +199,46 @@ export default function SettingsPage() {
           <span className="text-zinc-200">screenplay.beta</span>.
         </p>
 
-        <form onSubmit={handleSave} className="space-y-5">
+        {/* EMAIL */}
+        <section className="mb-8">
+          <h2 className="text-sm font-semibold mb-2">Account email</h2>
+          <form onSubmit={handleSaveEmail} className="space-y-3">
+            <div>
+              <label className="block text-[0.65rem] uppercase tracking-[0.16em] text-zinc-500 mb-1">
+                Email
+              </label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full bg-black border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-zinc-500"
+                placeholder="you@example.com"
+                autoComplete="email"
+              />
+              <p className="mt-1 text-[0.6rem]">
+                {isVerified ? (
+                  <span className="text-emerald-400">Verified</span>
+                ) : (
+                  <span className="text-amber-400">Not verified</span>
+                )}
+              </p>
+            </div>
+
+            {emailErr && <p className="text-[0.7rem] text-red-400">{emailErr}</p>}
+            {emailMsg && <p className="text-[0.7rem] text-emerald-400">{emailMsg}</p>}
+
+            <button
+              type="submit"
+              disabled={savingEmail}
+              className="cursor-pointer px-4 py-2 rounded-full bg-white text-black text-xs font-semibold tracking-[0.16em] uppercase hover:bg-zinc-100 transition disabled:opacity-60"
+            >
+              {savingEmail ? 'Saving…' : 'Save email'}
+            </button>
+          </form>
+        </section>
+
+        {/* PROFILE (username/bio) */}
+        <form onSubmit={handleSaveProfile} className="space-y-5">
           <div>
             <label className="block text-[0.65rem] uppercase tracking-[0.16em] text-zinc-500 mb-1">
               Username
@@ -152,7 +251,7 @@ export default function SettingsPage() {
               placeholder="yourname"
             />
             <p className="mt-1 text-[0.6rem] text-zinc-500">
-              This is used in your public profile URL:{' '}
+              Public profile URL:{' '}
               <code className="text-zinc-300">
                 /profile/{username || 'yourname'}
               </code>
@@ -171,24 +270,16 @@ export default function SettingsPage() {
             />
           </div>
 
-          {error && (
-            <p className="text-[0.7rem] text-red-400">
-              {error}
-            </p>
-          )}
-          {success && (
-            <p className="text-[0.7rem] text-emerald-400">
-              {success}
-            </p>
-          )}
+          {error && <p className="text-[0.7rem] text-red-400">{error}</p>}
+          {success && <p className="text-[0.7rem] text-emerald-400">{success}</p>}
 
           <div className="flex items-center gap-3">
             <button
               type="submit"
-              disabled={saving}
-              className="px-4 py-2 rounded-full bg-white text-black text-xs font-semibold tracking-[0.16em] uppercase hover:bg-zinc-100 transition disabled:opacity-60"
+              disabled={savingProfile}
+              className="cursor-pointer px-4 py-2 rounded-full bg-white text-black text-xs font-semibold tracking-[0.16em] uppercase hover:bg-zinc-100 transition disabled:opacity-60"
             >
-              {saving ? 'Saving...' : 'Save changes'}
+              {savingProfile ? 'Saving…' : 'Save changes'}
             </button>
             <Link
               href={username ? `/profile/${username}` : '/'}
@@ -198,7 +289,59 @@ export default function SettingsPage() {
             </Link>
           </div>
         </form>
+
+        {/* Danger zone */}
+        <div className="mt-10 rounded-2xl border border-red-900/40 bg-red-950/20 p-4">
+          <h2 className="font-medium text-red-400">Danger zone</h2>
+          <p className="text-sm text-zinc-400 mt-1">
+            Permanently deletes your account, profile, scripts, comments, votes, and saves.
+          </p>
+          <DeleteAccount />
+        </div>
       </div>
     </main>
+  )
+}
+
+function DeleteAccount() {
+  const router = useRouter()
+  const [confirm, setConfirm] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [err, setErr] = useState<string | null>(null)
+
+  const onDelete = async () => {
+    setErr(null)
+    if (confirm !== 'DELETE') {
+      setErr('Type DELETE to confirm.')
+      return
+    }
+    setBusy(true)
+    const { error } = await supabase.rpc('delete_my_account')
+    if (error) {
+      setErr(error.message)
+      setBusy(false)
+      return
+    }
+    await supabase.auth.signOut()
+    router.replace('/goodbye?deleted=1')
+  }
+
+  return (
+    <div className="mt-4 flex items-center gap-3">
+      <input
+        value={confirm}
+        onChange={(e) => setConfirm(e.target.value)}
+        placeholder="Type DELETE to confirm"
+        className="w-56 rounded-md bg-black/40 border border-zinc-800 px-3 py-2 text-sm outline-none"
+      />
+      <button
+        onClick={onDelete}
+        disabled={busy}
+        className="cursor-pointer rounded-md px-4 py-2 text-sm bg-red-600 hover:bg-red-700 disabled:opacity-50"
+      >
+        {busy ? 'Deleting…' : 'Delete my account'}
+      </button>
+      {err && <div className="text-sm text-red-400 ml-3">{err}</div>}
+    </div>
   )
 }

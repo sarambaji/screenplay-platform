@@ -24,3 +24,19 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* ==============================================
+   Global typography & readability improvements
+   ============================================== */
+html {
+  font-size: 18px;
+  line-height: 1.7;
+  font-family: 'Inter', 'Helvetica Neue', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  color: var(--foreground);
+  background-color: var(--background);
+}

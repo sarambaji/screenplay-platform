@@ -49,13 +49,13 @@ export default function ProfilePage() {
 
       setProfile(profileData as Profile)
 
-      // 2) Get current auth user
+      // 2) Get current auth user and check ownership
       const { data: userData } = await supabase.auth.getUser()
       const authedUserId = userData?.user?.id ?? null
       const owner = authedUserId === profileData.id
       setIsOwner(!!owner)
 
-      // 3) Public scripts for this profile (visible to everyone)
+      // 3) Public scripts
       const { data: publicData } = await supabase
         .from('scripts')
         .select('id, title, logline, genre, created_at, is_public')
@@ -65,7 +65,7 @@ export default function ProfilePage() {
 
       setPublicScripts((publicData as Script[]) || [])
 
-      // 4) If viewer owns this profile, also load *all* scripts and split out private ones
+      // 4) Private scripts (only if owner)
       if (owner) {
         const { data: allData } = await supabase
           .from('scripts')
@@ -85,6 +85,34 @@ export default function ProfilePage() {
 
     load()
   }, [username])
+
+  // 🔹 Delete handler lives OUTSIDE useEffect, INSIDE component
+  const handleDeleteProfile = async () => {
+    // safety: need both auth user + loaded profile and must match
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+    if (!user || !profile || user.id !== profile.id) return
+
+    const ok = window.confirm(
+      'Delete your profile and sign out? This may remove your presence from the platform.'
+    )
+    if (!ok) return
+
+    const { error } = await supabase
+      .from('profiles')
+      .delete()
+      .eq('id', user.id)
+
+    if (error) {
+      console.error('Error deleting profile:', error)
+      alert('Could not delete your profile. Please try again.')
+      return
+    }
+
+    await supabase.auth.signOut()
+    window.location.href = '/'
+  }
 
   if (loading) {
     return (
@@ -109,6 +137,7 @@ export default function ProfilePage() {
         <h1 className="text-xl font-semibold">
           @{profile.username || 'unnamed'}
         </h1>
+
         {profile.bio && (
           <p className="mt-1 text-sm text-slate-300">
             {profile.bio}
@@ -116,13 +145,21 @@ export default function ProfilePage() {
         )}
 
         {isOwner && (
-          <p className="mt-2 text-[0.7rem] text-slate-500">
-            This is your public profile. Only you can see your private drafts below.
-          </p>
+          <>
+            <p className="mt-2 text-[0.7rem] text-slate-500">
+              This is your public profile. Only you can see your private drafts below.
+            </p>
+            <button
+              onClick={handleDeleteProfile}
+              className="cursor-pointer mt-3 text-xs text-red-400 border border-red-500 px-3 py-1 rounded-full hover:bg-red-500 hover:text-white transition"
+            >
+              Delete Profile
+            </button>
+          </>
         )}
       </div>
 
-      {/* Public scripts (everyone sees) */}
+      {/* Public scripts */}
       <section>
         <h2 className="text-sm font-semibold mb-2">
           Public screenplays
@@ -147,7 +184,7 @@ export default function ProfilePage() {
         )}
       </section>
 
-      {/* Private drafts (owner-only dashboard section) */}
+      {/* Private drafts */}
       {isOwner && (
         <section>
           <h2 className="text-sm font-semibold mb-2">

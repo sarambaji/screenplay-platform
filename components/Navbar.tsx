@@ -96,7 +96,7 @@ export default function Navbar() {
 
           {/* Primary nav */}
           <Link
-            href="/scripts"
+            href="/discover"
             className="text-sm text-slate-300 hover:text-white"
           >
             Discover
@@ -108,10 +108,10 @@ export default function Navbar() {
             Leaderboard
           </Link>
           <Link
-            href="/worlds"
+            href="/worldboards"
             className="text-sm text-slate-300 hover:text-white"
           >
-            Worlds
+            Worldboards
           </Link>
 
           {/* Actions */}
@@ -119,7 +119,7 @@ export default function Navbar() {
             href="/upload"
             className="text-sm text-black bg-slate-100 px-3 py-1.5 rounded-full font-medium hover:bg-white transition"
           >
-            Upload
+            Create
           </Link>
         </div>
 
@@ -142,7 +142,7 @@ export default function Navbar() {
                     className="w-8 h-8 rounded-full border border-slate-700 object-cover"
                   />
                 ) : (
-                  <div className="w-8 h-8 rounded-full bg-slate-900 border border-slate-700 flex items-center justify-center text-[0.7rem] text-slate-200">
+                  <div className="cursor-pointer w-8 h-8 rounded-full bg-slate-900 border border-slate-700 flex items-center justify-center text-[0.7rem] text-slate-200">
                     {username
                       ? username[0]?.toUpperCase()
                       : user.email?.[0]?.toUpperCase() || '•'}
@@ -151,10 +151,10 @@ export default function Navbar() {
 
                 {/* Label */}
                 <div className="hidden sm:flex flex-col items-start">
-                  <span className="text-[0.55rem] uppercase tracking-[0.16em] text-slate-500">
-                    Writer
+                  <span className="cursor-pointer text-[0.55rem] uppercase tracking-[0.16em] text-slate-500">
+                    Profile
                   </span>
-                  <span className="text-[0.7rem] text-slate-200 max-w-[110px] truncate">
+                  <span className="cursor-pointer text-[0.7rem] text-slate-200 max-w-[110px] truncate">
                     {username || user.email || 'Profile'}
                   </span>
                 </div>
@@ -179,6 +179,7 @@ export default function Navbar() {
                   >
                     My Scripts
                   </Link>
+                  <Link href="/settings" className="block px-3 py-2 text-[0.75rem] text-slate-200 hover:bg-slate-900">Settings</Link>
                   <Link
                     href="/dashboard"
                     className="block px-3 py-2 text-[0.75rem] text-slate-200 hover:bg-slate-900"
@@ -188,7 +189,7 @@ export default function Navbar() {
                   </Link>
                   <button
                     onClick={handleLogout}
-                    className="w-full text-left px-3 py-2 text-[0.75rem] text-red-400 hover:bg-slate-900 rounded-b-2xl"
+                    className="cursor-pointer w-full text-left px-3 py-2 text-[0.75rem] text-red-400 hover:bg-slate-900 rounded-b-2xl"
                   >
                     Logout
                   </button>
@@ -199,13 +200,13 @@ export default function Navbar() {
             <>
               <Link
                 href="/login"
-                className="text-xs px-3 py-1 rounded border border-slate-700 text-slate-200 hover:bg-slate-800"
+                className="text-xs px-3 py-1 rounded-full border border-slate-700 text-slate-200 hover:bg-slate-800"
               >
                 Login
               </Link>
               <Link
                 href="/signup"
-                className="text-xs px-3 py-1 rounded bg-slate-100 text-black hover:bg-white"
+                className="text-xs px-3 py-1 rounded-full bg-slate-100 text-black hover:bg-white"
               >
                 Sign up
               </Link>

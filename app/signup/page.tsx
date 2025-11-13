@@ -17,6 +17,12 @@ export default function SignupPage() {
     e.preventDefault()
     setError(null)
     setInfo(null)
+
+    if (!username.trim()) {
+      setError('Please choose a username.')
+      return
+    }
+
     setLoading(true)
 
     const { data, error: signUpError } = await supabase.auth.signUp({
@@ -36,23 +42,27 @@ export default function SignupPage() {
       return
     }
 
-    // Create profile row (upsert in case they sign up again with same id)
-    await supabase.from('profiles').upsert({
+    // Create profile row
+    const { error: profileError } = await supabase.from('profiles').upsert({
       id: data.user.id,
-      username: username || null,
+      username: username.trim(),
     })
 
-    // If email confirmation is OFF, we will already have a session and can redirect.
-    // If it's ON, there is no session; tell them to verify email.
-    if (data.session) {
+    if (profileError) {
+      setError(profileError.message)
       setLoading(false)
+      return
+    }
+
+    if (data.session) {
       router.push('/dashboard')
     } else {
-      setLoading(false)
       setInfo(
         'Account created. Please check your email to confirm your address before logging in.'
       )
     }
+
+    setLoading(false)
   }
 
   return (
@@ -77,7 +87,8 @@ export default function SignupPage() {
         />
         <input
           type="text"
-          placeholder="Username (optional)"
+          required
+          placeholder="Username"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
           className="w-full px-3 py-2 rounded bg-black border border-slate-700 text-sm"
