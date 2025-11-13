@@ -139,7 +139,7 @@ export default function Navbar() {
                   <img
                     src={profile.avatar_url}
                     alt="User avatar"
-                    className="w-8 h-8 rounded-full border border-slate-700 object-cover"
+                    className="cursor-pointer w-8 h-8 rounded-full border border-slate-700 object-cover"
                   />
                 ) : (
                   <div className="cursor-pointer w-8 h-8 rounded-full bg-slate-900 border border-slate-700 flex items-center justify-center text-[0.7rem] text-slate-200">

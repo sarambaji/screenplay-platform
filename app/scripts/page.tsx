@@ -29,21 +29,21 @@ export default function ScriptsDashboard() {
   useEffect(() => {
     ;(async () => {
       setLoading(true)
+
       const { data } = await supabase.auth.getUser()
       const user = data?.user
+
+      // ❗ If no user, send them to login – this page is for writers only
       if (!user) {
-        setUserId(null)
-        setScripts([])
-        setLoading(false)
+        router.push('/login')
         return
       }
+
       setUserId(user.id)
 
       const { data: scriptsData, error: sErr } = await supabase
         .from('scripts')
-        .select(
-          'id, title, logline, genre, is_public, created_at'
-        )
+        .select('id, title, logline, genre, is_public, created_at')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
 
@@ -51,10 +51,15 @@ export default function ScriptsDashboard() {
       setScripts(scriptsData || [])
       setLoading(false)
     })()
-  }, [])
+  }, [router])
 
   const handleCreate = async () => {
-    if (!userId || !title.trim()) return
+    if (!userId) {
+      router.push('/login')
+      return
+    }
+    if (!title.trim()) return
+
     setCreating(true)
     setError(null)
     try {
@@ -73,7 +78,6 @@ export default function ScriptsDashboard() {
 
       if (error || !data) throw error || new Error('Failed to create script.')
 
-      // go straight into editor view
       router.push(`/scripts/${data.id}/edit`)
     } catch (e: any) {
       console.error(e)
@@ -148,7 +152,7 @@ export default function ScriptsDashboard() {
                 <button
                   onClick={handleCreate}
                   disabled={creating || !title.trim()}
-                  className="w-full mt-1 py-2 rounded-xl bg-white text-black text-[0.75rem] font-semibold tracking-[0.16em] uppercase disabled:opacity-40"
+                  className="cursor-pointer w-full mt-1 py-2 rounded-xl bg-white text-black text-[0.75rem] font-semibold tracking-[0.16em] uppercase disabled:opacity-40"
                 >
                   {creating ? 'Creating…' : 'Create & Open Editor'}
                 </button>
@@ -167,7 +171,7 @@ export default function ScriptsDashboard() {
               </div>
               <button
                 onClick={() => router.push('/upload')}
-                className="mt-auto py-2 rounded-xl border border-zinc-600 text-[0.75rem] font-semibold tracking-[0.16em] uppercase hover:bg-zinc-900"
+                className="cursor-pointer mt-auto py-2 rounded-xl border border-zinc-600 text-[0.75rem] font-semibold tracking-[0.16em] uppercase hover:bg-zinc-900"
               >
                 Go to Upload
               </button>

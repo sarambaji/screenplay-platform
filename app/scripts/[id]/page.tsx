@@ -4,7 +4,7 @@ import React, { useEffect, useState, useMemo, useCallback } from 'react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabaseClient'
-
+import { SCRIPT_TYPES, type ScriptType } from '@/lib/scriptMeta'
 
 
 /** =========================
@@ -21,8 +21,8 @@ type Script = {
   content: string | null
   is_public: boolean
   upvotes_count: number | null
-  // NEW: track total views on the script row
   views_count: number | null
+  script_type: ScriptType | null        
 }
 
 type Soundtrack = {
@@ -561,12 +561,13 @@ useEffect(() => {
 
       // script
       const { data: s, error: sErr } = await supabase
-        .from('scripts')
-        .select(
-          'id, user_id, title, logline, genre, subgenre, tags, content, is_public, upvotes_count, views_count'
-        )
-        .eq('id', scriptId)
-        .single<Script>()
+  .from('scripts')
+  .select(
+    'id, user_id, title, logline, genre, subgenre, tags, content, is_public, upvotes_count, views_count, script_type'
+  )
+  .eq('id', scriptId)
+  .single<Script>()
+
 
       if (sErr || !s) {
         setError('Script not found.')
@@ -888,101 +889,128 @@ useEffect(() => {
     <main className="min-h-screen bg-black text-white py-8 px-4 flex justify-center">
       <div className="w-full max-w-5xl space-y-6">
         {/* Header */}
-        <div className="flex items-start justify-between gap-6">
-          <div className="flex-1">
-            <p className="text-[0.6rem] uppercase tracking-[0.2em] text-zinc-500">Screenplay</p>
-            <h1 className="text-3xl md:text-4xl font-semibold mt-1">{script.title}</h1>
+<div className="flex items-start justify-between gap-6">
+  <div className="flex-1">
+    {/* Top label now respects script_type */}
+    <p className="text-[0.6rem] uppercase tracking-[0.2em] text-zinc-500">
+      {script.script_type
+        ? SCRIPT_TYPES.find((t) => t.value === script.script_type)?.label || 'Screenplay'
+        : 'Screenplay'}
+    </p>
 
-            {script.logline && (
-              <p className="text-[1.05rem] text-zinc-300 mt-4 max-w-3xl leading-8">{script.logline}</p>
-            )}
+    <h1 className="text-3xl md:text-4xl font-semibold mt-1">
+      {script.title}
+    </h1>
 
-            <div className="mt-6">
-              {script.genre ? (
-                <span className="text-[0.75rem] tracking-[0.18em] uppercase text-zinc-400">
-                  {script.genre}
-                  {script.subgenre ? <span className="text-zinc-600"> — {script.subgenre}</span> : null}
-                </span>
-              ) : (
-                <span className="text-[0.75rem] tracking-[0.18em] uppercase text-zinc-700">(No genre)</span>
-              )}
-            </div>
+    {script.logline && (
+      <p className="text-[0.95rem] text-zinc-300 mt-4 max-w-3xl leading-8">
+        {script.logline}
+      </p>
+    )}
 
-            {Array.isArray(script.tags) && script.tags.length > 0 && (
-              <div className="mt-3 flex flex-wrap gap-2">
-                {script.tags.map(t => (
-                  <span
-                    key={t}
-                    className="px-2.5 py-1 rounded-full bg-zinc-900 border border-zinc-800 text-xs text-zinc-200"
-                  >
-                    {t}
-                  </span>
-                ))}
-              </div>
-            )}
+    {/* Script type + genre block */}
+    <div className="mt-6 space-y-1">
+      {/* Optional: small secondary label line if you want */}
+      <div className="text-[0.7rem] tracking-[0.18em] uppercase text-zinc-500">
+        {script.genre ? 'Genre' : ''}
+      </div>
 
-            <div className="mt-3 text-sm">
-  {isOwner && (
-    script.is_public ? (
-      <span className="text-amber-400">Public – visible to readers.</span>
-    ) : (
-      <span className="text-zinc-400">Private — only you can view this.</span>
-    )
-  )}
+      <div>
+        {script.genre ? (
+          <span className="text-[0.75rem] tracking-[0.18em] uppercase text-zinc-400">
+            {script.genre}
+            {script.subgenre ? (
+              <span className="text-[0.65rem] text-zinc-600"> — {script.subgenre}</span>
+            ) : null}
+          </span>
+        ) : (
+          <span className="text-[0.75rem] tracking-[0.18em] uppercase text-zinc-700">
+            (No genre)
+          </span>
+        )}
+      </div>
+    </div>
+
+    {/* Tags */}
+    {Array.isArray(script.tags) && script.tags.length > 0 && (
+      <div className="mt-3 flex flex-wrap gap-2">
+        {script.tags.map((t) => (
+          <span
+            key={t}
+            className="px-2.5 py-1 rounded-full bg-zinc-900 border border-zinc-800 text-xs text-zinc-200"
+          >
+            {t}
+          </span>
+        ))}
+      </div>
+    )}
+
+    {/* Visibility note for owner */}
+    <div className="mt-3 text-sm">
+      {isOwner &&
+        (script.is_public ? (
+          <span className="text-green-400">Public</span>
+        ) : (
+          <span className="text-red-400">Private</span>
+        ))}
+    </div>
+  </div>
+
+  {/* RIGHT: actions – unchanged */}
+  <div className="flex flex-col items-end gap-2">
+    {isOwner && (
+      <Link
+        href={`/scripts/${script.id}/edit`}
+        className="cursor-pointer px-3 py-1.5 rounded-full border border-zinc-600 text-[0.7rem] hover:bg-zinc-800"
+      >
+        Edit script
+      </Link>
+    )}
+
+    {isOwner && (
+      <button
+        onClick={() => handleSetVisibility(!script.is_public)}
+        className={`px-3 py-1.5 rounded-full border text-[0.7rem] ${
+          script.is_public
+            ? 'cursor-pointer border-emerald-500 text-emerald-300 hover:bg-emerald-500 hover:text-black'
+            : 'border-zinc-600 text-zinc-300 hover:bg-zinc-200 hover:text-black'
+        }`}
+        title={script.is_public ? 'Set to Private' : 'Publish (Public)'}
+      >
+        {script.is_public ? 'Set Private' : 'Publish'}
+      </button>
+    )}
+
+    {/* VOTE BUTTON */}
+    <button
+      onClick={handleToggleVote}
+      className={`cursor-pointer px-3 py-2 rounded-full border text-[0.7rem] flex items-center gap-2 min-w-[100px] ${
+        vote.hasVoted
+          ? 'bg-white text-black border-white'
+          : 'bg-black text-zinc-200 border-zinc-700 hover:border-zinc-400'
+      }`}
+    >
+      <span className="text-sm">{vote.hasVoted ? '★' : '☆'}</span>
+      <span className="font-semibold tracking-[0.14em] uppercase">
+        {vote.hasVoted ? 'Voted' : 'Vote'}
+      </span>
+    </button>
+
+    {/* Stats */}
+    <div className="mt-1 flex items-center gap-3 text-[0.65rem] text-zinc-400">
+      <span>
+        {vote.count} {vote.count === 1 ? 'vote' : 'votes'}
+      </span>
+      <span>
+        · {totalComments} {totalComments === 1 ? 'comment' : 'comments'}
+      </span>
+      <span>
+        · {viewsCount} {viewsCount === 1 ? 'view' : 'views'}
+      </span>
+    </div>
+  </div>
 </div>
 
-
-          </div>
-
-          <div className="flex flex-col items-end gap-2">
-            {isOwner && (
-              <Link
-                href={`/scripts/${script.id}/edit`}
-                className="cursor-pointer px-3 py-1.5 rounded-full border border-zinc-600 text-[0.7rem] hover:bg-zinc-800"
-              >
-                Edit script
-              </Link>
-            )}
-
-            {isOwner && (
-              <button
-                onClick={() => handleSetVisibility(!script.is_public)}
-                className={`px-3 py-1.5 rounded-full border text-[0.7rem] ${
-                  script.is_public
-                    ? 'cursor-pointer border-emerald-500 text-emerald-300 hover:bg-emerald-500 hover:text-black'
-                    : 'border-zinc-600 text-zinc-300 hover:bg-zinc-200 hover:text-black'
-                }`}
-                title={script.is_public ? 'Set to Private' : 'Publish (Public)'}
-              >
-                {script.is_public ? 'Set Private' : 'Publish'}
-              </button>
-            )}
-
-            {/* VOTE BUTTON (replaces Recommend) */}
-            <button
-              onClick={handleToggleVote}
-              className={`cursor-pointer px-3 py-2 rounded-full border text-[0.7rem] flex items-center gap-2 min-w-[100px] ${
-                vote.hasVoted
-                  ? 'bg-white text-black border-white'
-                  : 'bg-black text-zinc-200 border-zinc-700 hover:border-zinc-400'
-              }`}
-            >
-              <span className="text-sm">{vote.hasVoted ? '★' : '☆'}</span>
-              <span className="font-semibold tracking-[0.14em] uppercase">
-                {vote.hasVoted ? 'Voted' : 'Vote'}
-              </span>
-            </button>
-
-            {/* Wattpad-style stats row */}
-            <div className="mt-1 flex items-center gap-3 text-[0.65rem] text-zinc-400">
-              <span>
-                {vote.count} {vote.count === 1 ? 'vote' : 'votes'}
-              </span>
-              <span>· {totalComments} {totalComments === 1 ? 'comment' : 'comments'}</span>
-              <span>· {viewsCount} {viewsCount === 1 ? 'view' : 'views'}</span>
-            </div>
-          </div>
-        </div>
 
         {/* Tabs */}
         <div className="border-b border-zinc-800 flex gap-6 text-[0.75rem]">

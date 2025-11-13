@@ -5,12 +5,14 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabaseClient'
+import { SCRIPT_TYPES } from '@/lib/scriptMeta'
 
 type Script = {
   id: string
   title: string
   is_public: boolean
   created_at: string
+  script_type: string | null
 }
 
 type ScriptWithViews = Script & {
@@ -47,10 +49,10 @@ export default function DashboardPage() {
 
       setUserId(user.id)
 
-      // 2. Get this user's scripts
+      // 2. Get this user's scripts (include script_type)
       const { data: scriptRows, error: scriptError } = await supabase
         .from('scripts')
-        .select('id, title, is_public, created_at')
+        .select('id, title, is_public, created_at, script_type')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
 
@@ -77,7 +79,7 @@ export default function DashboardPage() {
 
       if (viewsError) {
         console.error(viewsError)
-        // we don't hard fail here; just default to 0 views
+        // don't hard fail; just treat views as 0
       }
 
       const viewCountMap: Record<string, number> = {}
@@ -89,7 +91,7 @@ export default function DashboardPage() {
         }
       }
 
-      const withViews: ScriptWithViews[] = scriptRows.map((s) => ({
+      const withViews: ScriptWithViews[] = (scriptRows as Script[]).map((s) => ({
         ...s,
         view_count: viewCountMap[s.id] || 0,
       }))
@@ -130,18 +132,26 @@ export default function DashboardPage() {
   const avgViews = total ? Math.round(totalViews / total) : 0
   const latest = scripts[0]
 
+  const getTypeLabel = (scriptType: string | null) => {
+    if (!scriptType) return 'Script project'
+    return (
+      SCRIPT_TYPES.find((t) => t.value === scriptType)?.label ||
+      'Script project'
+    )
+  }
+
   return (
     <main className="min-h-screen bg-black text-white py-10 px-6">
       <h1 className="text-2xl font-semibold mb-2">Your stats</h1>
       <p className="text-sm text-zinc-500 mb-6">
-        A quick snapshot of your work on screenplay.beta.
+        A quick snapshot of your projects on screenplay.beta.
       </p>
 
       {/* Stat cards */}
       <div className="grid gap-4 md:grid-cols-4 mb-8">
         <div className="border border-zinc-800 rounded-2xl p-4">
           <p className="text-[0.65rem] uppercase tracking-[0.16em] text-zinc-500">
-            Total screenplays
+            Total projects
           </p>
           <p className="mt-2 text-2xl font-semibold">{total}</p>
         </div>
@@ -165,27 +175,32 @@ export default function DashboardPage() {
             Total views
           </p>
           <p className="mt-2 text-2xl font-semibold">
-            {totalViews} <span className="text-xs text-zinc-500">({avgViews} avg)</span>
+            {totalViews}{' '}
+            <span className="text-xs text-zinc-500">
+              ({avgViews} avg)
+            </span>
           </p>
         </div>
       </div>
 
       {/* Recent uploads */}
       <section className="space-y-3">
-        <h2 className="text-sm font-semibold mb-1">Recent uploads</h2>
+        <h2 className="text-sm font-semibold mb-1">Recent projects</h2>
         {scripts.length === 0 ? (
           <p className="text-xs text-zinc-500">
-            You haven&apos;t uploaded anything yet.{' '}
+            You haven&apos;t created anything yet.{' '}
             <Link href="/upload" className="underline">
-              Upload your first screenplay.
+              Upload your first script.
             </Link>
           </p>
         ) : (
           <>
             {latest && (
               <p className="text-[0.65rem] text-zinc-500 mb-1">
-                Latest: <span className="text-zinc-100">{latest.title}</span>{' '}
-                • {latest.is_public ? 'Public' : 'Private'} •{' '}
+                Latest:{' '}
+                <span className="text-zinc-100">{latest.title}</span>{' '}
+                • {getTypeLabel(latest.script_type)} •{' '}
+                {latest.is_public ? 'Public' : 'Private'} •{' '}
                 {new Date(latest.created_at).toLocaleDateString()}
               </p>
             )}
@@ -201,6 +216,7 @@ export default function DashboardPage() {
                       {s.title}
                     </span>
                     <span className="text-[0.6rem] text-zinc-500">
+                      {getTypeLabel(s.script_type)} •{' '}
                       {s.is_public ? 'Public' : 'Private'} •{' '}
                       {new Date(s.created_at).toLocaleDateString()}
                     </span>

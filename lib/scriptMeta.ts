@@ -53,3 +53,58 @@ export const RECOMMENDED_TAGS = [
   'heist',
   'unreliable narrator'
 ]
+
+export const SCRIPT_TYPES = [
+  {
+    label: "Screenplay",
+    value: "screenplay",
+    description: "Film or TV-style script using industry-standard formatting.",
+  },
+  {
+    label: "TV Pilot",
+    value: "tv_pilot",
+    description: "First episode of a television series, usually 25–60 minutes.",
+  },
+  {
+    label: "Short Film",
+    value: "short_film",
+    description: "Script for films typically under 40 pages.",
+  },
+  {
+    label: "Stage Play",
+    value: "stage_play",
+    description: "Theatrical play, one-act or full-length.",
+  },
+  {
+    label: "Web Series",
+    value: "web_series",
+    description: "Online episodic content, scripted for digital platforms.",
+  },
+  {
+    label: "Animation Script",
+    value: "animation_script",
+    description: "Scripts intended for animated films or series.",
+  },
+  {
+    label: "Video Game Script",
+    value: "video_game_script",
+    description: "Story, cutscenes, and branching dialogue for games.",
+  },
+  {
+    label: "Audio Drama",
+    value: "audio_drama",
+    description: "Radio drama or scripted audio fiction with no visuals.",
+  },
+  {
+    label: "Interactive Fiction",
+    value: "interactive_fiction",
+    description: "Nonlinear stories with choices, branching paths, or interactivity.",
+  },
+  {
+    label: "Other",
+    value: "other",
+    description: "Anything that doesn't fit into the categories above.",
+  },
+] as const
+
+export type ScriptType = (typeof SCRIPT_TYPES)[number]["value"]

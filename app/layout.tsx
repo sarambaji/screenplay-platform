@@ -7,7 +7,7 @@ import ScrollButtons from '@/components/ScrollButtons'
 
 export const metadata: Metadata = {
   title: 'screenplay.',
-  description: 'Read and share original screenplays.',
+  description: 'Read and share original scripts.',
 }
 
 export default function RootLayout({

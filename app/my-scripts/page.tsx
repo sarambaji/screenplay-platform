@@ -81,7 +81,7 @@ export default function MyScriptsPage() {
         <p className="text-sm text-zinc-500">
           You haven&apos;t uploaded anything yet.{' '}
           <Link href="/upload" className="underline">
-            Upload your first screenplay.
+            Upload your first script.
           </Link>
         </p>
       ) : (

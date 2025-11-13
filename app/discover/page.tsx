@@ -1,23 +1,28 @@
+// app/discover/page.tsx
 'use client'
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabaseClient'
 
-type Script = {
+type ScriptRow = {
   id: string
   title: string
   logline: string | null
   genre: string | null
   subgenre: string | null
   upvotes_count: number | null
-  views_count: number | null
   created_at: string
 }
 
+type ScriptWithViews = ScriptRow & {
+  views_count: number
+  comment_count: number
+}
+
 export default function DiscoverPage() {
-  const [scripts, setScripts] = useState<Script[]>([])
-  const [topScripts, setTopScripts] = useState<Script[]>([])
+  const [scripts, setScripts] = useState<ScriptWithViews[]>([])
+  const [topScripts, setTopScripts] = useState<ScriptWithViews[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -26,10 +31,11 @@ export default function DiscoverPage() {
       setLoading(true)
       setError(null)
 
+      // 1) Get all public scripts (basic info)
       const { data, error } = await supabase
         .from('scripts')
         .select(
-          'id, title, logline, genre, subgenre, upvotes_count, views_count, created_at'
+          'id, title, logline, genre, subgenre, upvotes_count, created_at'
         )
         .eq('is_public', true)
         .order('created_at', { ascending: false })
@@ -41,14 +47,63 @@ export default function DiscoverPage() {
         return
       }
 
-      const all = (data || []) as Script[]
+      const baseScripts = (data || []) as ScriptRow[]
 
-      setScripts(all)
+      if (baseScripts.length === 0) {
+        setScripts([])
+        setTopScripts([])
+        setLoading(false)
+        return
+      }
 
-      const ranked = [...all]
-        .sort(
-          (a, b) => (b.upvotes_count ?? 0) - (a.upvotes_count ?? 0)
-        )
+      const scriptIds = baseScripts.map((s) => s.id)
+
+      // 2) Get all view rows + comment rows for these scripts
+      const [{ data: viewRows, error: viewError }, { data: commentRows, error: commentError }] =
+        await Promise.all([
+          supabase
+            .from('script_views')
+            .select('script_id')
+            .in('script_id', scriptIds),
+          supabase
+            .from('script_comments')
+            .select('script_id')
+            .in('script_id', scriptIds),
+        ])
+
+      if (viewError) console.error('viewError', viewError)
+      if (commentError) console.error('commentError', commentError)
+
+      // 3) Build count maps
+      const viewCountMap: Record<string, number> = {}
+      const commentCountMap: Record<string, number> = {}
+
+      ;(viewRows || []).forEach((row: any) => {
+        const id = row.script_id as string
+        viewCountMap[id] = (viewCountMap[id] || 0) + 1
+      })
+
+      ;(commentRows || []).forEach((row: any) => {
+        const id = row.script_id as string
+        commentCountMap[id] = (commentCountMap[id] || 0) + 1
+      })
+
+      // 4) Attach counts to each script
+      const withViews: ScriptWithViews[] = baseScripts.map((s) => ({
+        ...s,
+        views_count: viewCountMap[s.id] || 0,
+        comment_count: commentCountMap[s.id] || 0,
+      }))
+
+      setScripts(withViews)
+
+      // 5) Build "top scripts" by votes (then views as tie-breaker)
+      const ranked = [...withViews]
+        .sort((a, b) => {
+          const voteDiff = (b.upvotes_count ?? 0) - (a.upvotes_count ?? 0)
+          if (voteDiff !== 0) return voteDiff
+          return b.views_count - a.views_count
+        })
         .slice(0, 5)
 
       setTopScripts(ranked)
@@ -68,7 +123,9 @@ export default function DiscoverPage() {
             </p>
           </header>
 
-          {loading && <p className="text-[0.8rem] text-zinc-500">Loading scripts…</p>}
+          {loading && (
+            <p className="text-[0.8rem] text-zinc-500">Loading scripts…</p>
+          )}
 
           {error && <p className="text-[0.8rem] text-red-400">{error}</p>}
 
@@ -94,34 +151,50 @@ export default function DiscoverPage() {
                     <p className="text-[0.65rem] uppercase tracking-[0.16em] text-zinc-500">
                       Screenplay
                     </p>
-                    <h2 className="text-sm font-semibold text-zinc-50">{s.title}</h2>
+                    <h2 className="text-sm font-semibold text-zinc-50">
+                      {s.title}
+                    </h2>
 
                     {s.logline && (
-                      <p className="text-[0.75rem] text-zinc-400 line-clamp-3">{s.logline}</p>
+                      <p className="text-[0.75rem] text-zinc-400 line-clamp-3">
+                        {s.logline}
+                      </p>
                     )}
 
                     {(s.genre || s.subgenre) && (
                       <p className="text-[0.6rem] uppercase tracking-[0.16em] text-zinc-500 mt-1">
                         {s.genre}
-                        {s.subgenre ? <span className="text-zinc-600"> — {s.subgenre}</span> : null}
+                        {s.subgenre ? (
+                          <span className="text-zinc-600">
+                            {' '}
+                            — {s.subgenre}
+                          </span>
+                        ) : null}
                       </p>
                     )}
                   </div>
 
-                  {/* stats row: votes + views */}
+                  {/* stats row: votes + comments + views */}
                   <div className="mt-3 flex items-center justify-between text-[0.6rem] text-zinc-500">
-                    <span className="flex items-center gap-3">
+                    <span className="flex items-center gap-2">
                       <span title="Votes">
-  {(s.upvotes_count ?? 0).toLocaleString()} {((s.upvotes_count ?? 0) === 1) ? 'vote' : 'votes'}
-</span>
-
+                        {(s.upvotes_count ?? 0).toLocaleString()}{' '}
+                        {(s.upvotes_count ?? 0) === 1 ? 'vote' : 'votes'}
+                      </span>
+                      <span aria-hidden="true">•</span>
+                      <span title="Comments">
+                        {s.comment_count.toLocaleString()}{' '}
+                        {s.comment_count === 1 ? 'comment' : 'comments'}
+                      </span>
                       <span aria-hidden="true">•</span>
                       <span title="Views">
-                        {(s.views_count ?? 0).toLocaleString()} views
+                        {s.views_count.toLocaleString()} views
                       </span>
                     </span>
 
-                    <span className="text-zinc-600 group-hover:text-zinc-300">Read →</span>
+                    <span className="text-zinc-600 group-hover:text-zinc-300">
+                      Read →
+                    </span>
                   </div>
                 </Link>
               ))}
@@ -137,7 +210,8 @@ export default function DiscoverPage() {
             </h2>
             {topScripts.length === 0 ? (
               <p className="text-[0.7rem] text-zinc-500">
-                Once writers start publishing, the most recommended projects will appear here.
+                Once writers start publishing, the most recommended projects
+                will appear here.
               </p>
             ) : (
               <ol className="space-y-2 text-[0.7rem]">
@@ -145,13 +219,19 @@ export default function DiscoverPage() {
                   <li key={s.id} className="flex gap-2">
                     <span className="text-zinc-600">{i + 1}.</span>
                     <div className="flex-1">
-                      <Link href={`/scripts/${s.id}`} className="text-zinc-100 hover:underline">
+                      <Link
+                        href={`/scripts/${s.id}`}
+                        className="text-zinc-100 hover:underline"
+                      >
                         {s.title}
                       </Link>
                       <p className="text-[0.6rem] text-zinc-500">
-  {(s.upvotes_count ?? 0).toLocaleString()} {((s.upvotes_count ?? 0) === 1) ? 'vote' : 'votes'} • {(s.views_count ?? 0).toLocaleString()} views
-</p>
-
+                        {(s.upvotes_count ?? 0).toLocaleString()}{' '}
+                        {(s.upvotes_count ?? 0) === 1 ? 'vote' : 'votes'} •{' '}
+                        {s.comment_count.toLocaleString()}{' '}
+                        {s.comment_count === 1 ? 'comment' : 'comments'} •{' '}
+                        {s.views_count.toLocaleString()} views
+                      </p>
                     </div>
                   </li>
                 ))}
@@ -160,7 +240,9 @@ export default function DiscoverPage() {
           </div>
 
           <div className="border border-zinc-900 rounded-2xl p-4 bg-zinc-950/20">
-            <p className="text-[0.7rem] text-zinc-400 mb-2">Are you a writer?</p>
+            <p className="text-[0.7rem] text-zinc-400 mb-2">
+              Are you a writer?
+            </p>
             <Link
               href="/upload"
               className="inline-flex items-center justify-center px-3 py-1.5 rounded-full bg-white text-black text-[0.7rem] font-semibold"

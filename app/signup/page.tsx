@@ -55,7 +55,7 @@ export default function SignupPage() {
     }
 
     if (data.session) {
-      router.push('/dashboard')
+      router.push('/scripts')
     } else {
       setInfo(
         'Account created. Please check your email to confirm your address before logging in.'

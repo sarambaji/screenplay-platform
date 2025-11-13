@@ -144,7 +144,7 @@ export default function UploadPage() {
       <main className="min-h-screen bg-black text-white flex items-center justify-center">
         <div className="text-center space-y-3">
           <p className="text-sm text-zinc-300">
-            You need an account to upload a screenplay.
+            You need an account to upload a script.
           </p>
           <a
             href="/login"
@@ -163,14 +163,14 @@ export default function UploadPage() {
       <div className="w-full max-w-3xl">
         <div className="mb-8">
           <p className="text-[0.65rem] uppercase tracking-[0.25em] text-zinc-500">
-            Upload Screenplay
+            Upload Script
           </p>
           <h1 className="text-3xl font-semibold mt-2">
             Share your story with confidence.
           </h1>
           {/* NEW reassurance line */}
           <p className="text-[0.7rem] text-zinc-500 mt-2 max-w-xl">
-            Your screenplay is private by default. Only you can see it unless you choose
+            Your script is private by default. Only you can see it unless you choose
             to make it public. Each upload is stored securely with a server timestamp as
             proof of when it was added.{' '}
             <Link
@@ -262,7 +262,7 @@ export default function UploadPage() {
           {mode === 'file' && (
             <div className="space-y-1">
               <label className="text-xs uppercase tracking-[0.18em] text-zinc-500">
-                Upload screenplay file
+                Upload script file
               </label>
               <div className="flex items-center gap-3">
                 <label className="inline-flex items-center px-3 py-2 text-xs rounded-full border border-zinc-700 bg-zinc-950 hover:bg-zinc-900 cursor-pointer">
@@ -312,7 +312,7 @@ export default function UploadPage() {
               className="mt-[2px] w-3 h-3"
             />
             <span>
-              Make this screenplay public and discoverable on the platform. Leave unchecked
+              Make this script public and discoverable on the platform. Leave unchecked
               to keep it visible only to you.
             </span>
           </label>

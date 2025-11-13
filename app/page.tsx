@@ -20,7 +20,7 @@ const featuredScripts = [
   {
     id: 'parallel-lives',
     title: 'Parallel Lives',
-    tag: 'Teleplay',
+    tag: 'TV Pilot',
     color: 'from-zinc-900 to-slate-900',
   },
   {
@@ -52,7 +52,7 @@ export default function HomePage() {
           transition={{ duration: 0.5, delay: 0.15 }}
           className="mt-4 text-sm sm:text-base text-zinc-400 max-w-xl"
         >
-          You’ve written it. Now let it be discovered. Welcome to the first platform for stories written for the screen and stage.
+          The home for visual storytelling. Write, share, and discover scripts across film, TV, games, animation, and more.
         </motion.p>
 
         <motion.div
@@ -139,7 +139,7 @@ export default function HomePage() {
         01 · Upload
       </p>
       <p className="text-[0.7rem] text-zinc-500">
-        Create or upload your screenplay in seconds
+        Create or upload your script in seconds
       </p>
     </div>
 
